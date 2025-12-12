@@ -323,6 +323,34 @@ class LeanWeekPredictor:
             if balance_risk:
                 warnings.append(f"Month {period_num}: CRITICAL - Balance may go negative (${worst_balance:,.2f})")
             
+            # Calculate daily ideal spend (divide monthly expenses by ~30 days)
+            # Adjust based on projected balance to prevent overspending
+            days_in_month = 30
+            
+            # Best case: Can afford the likely expense rate
+            daily_ideal_best = forecast_expense_likely / days_in_month
+            
+            # Likely case: Should spend based on available balance and income
+            # Factor in some buffer to maintain financial health
+            available_for_spending = forecast_income_likely + max(0, running_balance * 0.1)  # 10% of current balance can be used
+            daily_ideal_likely = min(forecast_expense_likely, available_for_spending) / days_in_month
+            
+            # Worst case: Conservative spending to preserve balance
+            # Only spend what you earn, don't touch reserves unless necessary
+            safe_spending = min(forecast_income_worst, forecast_expense_best)
+            daily_ideal_worst = safe_spending / days_in_month
+            
+            # Single recommended daily budget (use likely scenario, adjust for risk)
+            if balance_risk:
+                # Critical situation - use worst case
+                daily_budget = daily_ideal_worst
+            elif is_lean:
+                # Lean period - be conservative, use average of likely and worst
+                daily_budget = (daily_ideal_likely + daily_ideal_worst) / 2
+            else:
+                # Normal period - use likely scenario
+                daily_budget = daily_ideal_likely
+            
             forecasts.append({
                 'period': period_num,
                 'month_offset': i + 1,
@@ -347,13 +375,23 @@ class LeanWeekPredictor:
                     'worst': round(worst_balance, 2)
                 },
                 'is_lean_period': is_lean,
-                'balance_at_risk': balance_risk
+                'balance_at_risk': balance_risk,
+                'daily_budget': round(daily_budget, 2),
+                'daily_ideal_spend': {
+                    'best': round(daily_ideal_best, 2),
+                    'likely': round(daily_ideal_likely, 2),
+                    'worst': round(daily_ideal_worst, 2)
+                }
             })
             
             # Use likely scenario for next period
             running_balance = likely_balance
         
+        # Get recommended daily spend (from first forecast period)
+        recommended_daily = forecasts[0]['daily_budget'] if forecasts else 0.0
+        
         return {
+            'recommended_daily_spend': recommended_daily,
             'forecasts': forecasts,
             'warnings': warnings,
             'confidence': income_confidence,
@@ -552,11 +590,18 @@ class LeanWeekPredictor:
             current_balance
         )
         
+        # Extract daily budget recommendations
+        current_month_budget = forecast['forecasts'][0]['daily_budget'] if forecast['forecasts'] else 0.0
+        next_month_budget = forecast['forecasts'][1]['daily_budget'] if len(forecast['forecasts']) > 1 else None
+        
         return {
             'summary': {
                 'risk_level': risk_level['level'],
                 'risk_message': risk_level['message'],
-                'immediate_action_needed': risk_level['immediate_action']
+                'immediate_action_needed': risk_level['immediate_action'],
+                'recommended_daily_spend': current_month_budget,
+                'current_month_daily_budget': current_month_budget,
+                'next_month_daily_budget': next_month_budget
             },
             'historical_analysis': {
                 'monthly': lean_analysis_monthly,

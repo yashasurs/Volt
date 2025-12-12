@@ -58,10 +58,13 @@ class ForecastPeriod(BaseModel):
     projected_balance: CashFlowScenario
     is_lean_period: bool
     balance_at_risk: bool
+    daily_budget: float  # Single recommended daily spend amount for this period
+    daily_ideal_spend: CashFlowScenario  # Detailed scenarios (best/likely/worst)
 
 
 class CashFlowForecast(BaseModel):
     """Cash flow forecast response"""
+    recommended_daily_spend: float  # Main recommended daily spend for current/first forecast period
     forecasts: List[ForecastPeriod]
     warnings: List[str]
     confidence: float
@@ -100,6 +103,9 @@ class RiskSummary(BaseModel):
     risk_level: str
     risk_message: str
     immediate_action_needed: bool
+    recommended_daily_spend: float  # Main daily spending recommendation
+    current_month_daily_budget: float  # Budget for current/first month
+    next_month_daily_budget: Optional[float]  # Budget for next month (if available)
 
 
 class HistoricalAnalysis(BaseModel):
