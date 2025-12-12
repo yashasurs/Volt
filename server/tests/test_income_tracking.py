@@ -9,8 +9,7 @@ Tests cover:
 - Edge cases (zero income, single payment, etc.)
 """
 import pytest
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from datetime import datetime, timezone
 from app.services.statistics import StatisticsService
 from app.utils.datetime_utils import utc_now, ensure_utc
 
