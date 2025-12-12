@@ -11,6 +11,8 @@ import '../../../email_transactions/presentation/bloc/email_transactions_bloc.da
 import '../../../email_transactions/presentation/pages/email_transactions_page.dart';
 import '../../../lean_week/presentation/bloc/lean_week_bloc.dart';
 import '../../../lean_week/presentation/pages/lean_week_page.dart';
+import '../../../goals/presentation/bloc/goal_bloc.dart';
+import '../../../goals/presentation/pages/goals_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -66,7 +68,7 @@ class HomePage extends StatelessWidget {
         builder: (context, state) {
           if (state is AuthAuthenticated) {
             final user = state.user;
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,6 +300,40 @@ class HomePage extends StatelessWidget {
                       icon: const Icon(Icons.analytics_outlined),
                       label: const Text(
                         'Lean Week Analysis',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Goals button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider(
+                              create: (_) => sl<GoalBloc>(),
+                              child: const GoalsPage(),
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.flag),
+                      label: const Text(
+                        'Goals',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

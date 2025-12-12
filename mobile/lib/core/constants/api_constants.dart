@@ -38,6 +38,10 @@ class ApiConstants {
   static const String leanWeekForecastEndpoint = '/lean-week/forecast';
   static const String leanWeekSmoothingRecommendationsEndpoint = '/lean-week/smoothing-recommendations';
   
+  // Goal endpoints
+  static const String goalsEndpoint = '/goals';
+  static const String goalsProgressEndpoint = '/goals/progress';
+  
   // Headers
   static const String contentType = 'application/json';
   static const String accept = 'application/json';

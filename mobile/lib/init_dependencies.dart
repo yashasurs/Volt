@@ -61,6 +61,11 @@ import 'features/lean_week/domain/usecases/get_cash_flow_forecast_usecase.dart';
 import 'features/lean_week/domain/usecases/get_income_smoothing_recommendations_usecase.dart';
 import 'features/lean_week/domain/usecases/get_lean_week_analysis_usecase.dart';
 import 'features/lean_week/presentation/bloc/lean_week_bloc.dart';
+import 'features/goals/data/datasources/goal_remote_data_source.dart';
+import 'features/goals/data/repositories/goal_repository_impl.dart';
+import 'features/goals/domain/repositories/goal_repository.dart';
+import 'features/goals/domain/usecases/goal_usecases.dart';
+import 'features/goals/presentation/bloc/goal_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -119,6 +124,9 @@ Future<void> initDependencies() async {
 
   // Lean Week feature
   _initLeanWeek();
+
+  // Goals feature
+  _initGoals();
 }
 
 void _initAuth() {
@@ -324,6 +332,47 @@ void _initLeanWeek() {
       getLeanWeekAnalysisUseCase: sl(),
       getCashFlowForecastUseCase: sl(),
       getIncomeSmoothingRecommendationsUseCase: sl(),
+    ),
+  );
+}
+
+void _initGoals() {
+  // Data sources
+  sl.registerLazySingleton<GoalRemoteDataSource>(
+    () => GoalRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<GoalRepository>(
+    () => GoalRepositoryImpl(
+      remoteDataSource: sl(),
+      networkInfo: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => CreateGoalUseCase(sl()));
+  sl.registerLazySingleton(() => GetAllGoalsUseCase(sl()));
+  sl.registerLazySingleton(() => GetGoalsWithProgressUseCase(sl()));
+  sl.registerLazySingleton(() => GetGoalUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateGoalUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteGoalUseCase(sl()));
+  sl.registerLazySingleton(() => ActivateGoalUseCase(sl()));
+  sl.registerLazySingleton(() => DeactivateGoalUseCase(sl()));
+  sl.registerLazySingleton(() => GetGoalContributionsUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => GoalBloc(
+      createGoalUseCase: sl(),
+      getAllGoalsUseCase: sl(),
+      getGoalsWithProgressUseCase: sl(),
+      getGoalUseCase: sl(),
+      updateGoalUseCase: sl(),
+      deleteGoalUseCase: sl(),
+      activateGoalUseCase: sl(),
+      deactivateGoalUseCase: sl(),
+      getGoalContributionsUseCase: sl(),
     ),
   );
 }
