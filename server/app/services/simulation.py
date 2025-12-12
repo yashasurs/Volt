@@ -6,10 +6,10 @@ Acts as the main interface for simulation functionality.
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional
 
-from app.services.simulation_scenario import simulate_spending_scenario as _simulate_spending_scenario
-from app.services.simulation_comparison import compare_scenarios as _compare_scenarios
-from app.services.simulation_reallocation import simulate_reallocation as _simulate_reallocation
-from app.services.simulation_projection import project_future_spending as _project_future_spending
+from app.services.simulations.scenario import simulate_spending_scenario as _simulate_spending_scenario
+from app.services.simulations.comparison import compare_scenarios as _compare_scenarios
+from app.services.simulations.reallocation import simulate_reallocation as _simulate_reallocation
+from app.services.simulations.projection import project_future_spending as _project_future_spending
 
 
 class SimulationService:
