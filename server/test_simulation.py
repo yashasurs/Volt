@@ -1,8 +1,3 @@
-"""
-Quick test script for simulation engine.
-Run with: python test_simulation.py
-"""
-
 import sys
 import os
 import asyncio
