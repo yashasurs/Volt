@@ -160,7 +160,3 @@ The mobile app is built with Flutter and follows clean architecture principles.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For questions or support, please open an issue in the repository.
