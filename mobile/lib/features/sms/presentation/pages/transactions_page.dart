@@ -16,19 +16,21 @@ class TransactionsPage extends StatefulWidget {
 
 class _TransactionsPageState extends State<TransactionsPage> {
   int _selectedDays = 30; // Default to 30 days
+  SmsBloc? _smsBloc;
 
   @override
   void initState() {
     super.initState();
-    context.read<SmsBloc>().add(CheckSmsPermissionEvent());
+    _smsBloc = context.read<SmsBloc>();
+    _smsBloc?.add(CheckSmsPermissionEvent());
     // Start listening for incoming SMS to auto-refresh transactions
-    context.read<SmsBloc>().add(StartListeningToIncomingSmsEvent());
+    _smsBloc?.add(StartListeningToIncomingSmsEvent());
   }
 
   @override
   void dispose() {
     // Stop listening when page is disposed
-    context.read<SmsBloc>().add(StopListeningToIncomingSmsEvent());
+    _smsBloc?.add(StopListeningToIncomingSmsEvent());
     super.dispose();
   }
 

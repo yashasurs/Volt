@@ -54,6 +54,9 @@ dependencies:
   
   # Functional Programming
   dartz: ^0.10.1
+  
+  # Image Picker
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

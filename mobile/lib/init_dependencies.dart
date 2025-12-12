@@ -24,6 +24,18 @@ import 'features/sms/domain/usecases/get_all_transactions_usecase.dart';
 import 'features/sms/domain/usecases/has_sms_permissions_usecase.dart';
 import 'features/sms/domain/usecases/request_sms_permissions_usecase.dart';
 import 'features/sms/presentation/bloc/sms_bloc.dart';
+import 'features/transactions/data/datasources/transaction_remote_data_source.dart';
+import 'features/transactions/data/datasources/ocr_remote_data_source.dart';
+import 'features/transactions/data/repositories/transaction_repository_impl.dart';
+import 'features/transactions/domain/repositories/transaction_repository.dart';
+import 'features/transactions/domain/usecases/create_transaction_usecase.dart';
+import 'features/transactions/domain/usecases/delete_transaction_usecase.dart';
+import 'features/transactions/domain/usecases/extract_transaction_from_image_usecase.dart';
+import 'features/transactions/domain/usecases/get_transaction_usecase.dart';
+import 'features/transactions/domain/usecases/get_transactions_by_date_range_usecase.dart';
+import 'features/transactions/domain/usecases/get_transactions_usecase.dart';
+import 'features/transactions/domain/usecases/update_transaction_usecase.dart';
+import 'features/transactions/presentation/bloc/transaction_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -70,6 +82,9 @@ Future<void> initDependencies() async {
 
   // SMS feature
   _initSms();
+
+  // Transactions feature
+  _initTransactions();
 }
 
 void _initAuth() {
@@ -137,6 +152,49 @@ void _initSms() {
       requestSmsPermissionsUseCase: sl(),
       hasSmsPermissionsUseCase: sl(),
       getAllTransactionsUseCase: sl(),
+    ),
+  );
+}
+
+void _initTransactions() {
+  // Data sources
+  sl.registerLazySingleton<TransactionRemoteDataSource>(
+    () => TransactionRemoteDataSourceImpl(sl()),
+  );
+
+  sl.registerLazySingleton<OCRRemoteDataSource>(
+    () => OCRRemoteDataSourceImpl(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<TransactionRepository>(
+    () => TransactionRepositoryImpl(
+      remoteDataSource: sl(),
+      ocrRemoteDataSource: sl(),
+      networkInfo: sl(),
+      authLocalDataSource: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
+  sl.registerLazySingleton(() => GetTransactionsByDateRangeUseCase(sl()));
+  sl.registerLazySingleton(() => GetTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => CreateTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => ExtractTransactionFromImageUseCase(sl()));
+
+  // BLoC
+  sl.registerFactory(
+    () => TransactionBloc(
+      getTransactionsUseCase: sl(),
+      getTransactionsByDateRangeUseCase: sl(),
+      getTransactionUseCase: sl(),
+      createTransactionUseCase: sl(),
+      updateTransactionUseCase: sl(),
+      deleteTransactionUseCase: sl(),
+      extractTransactionFromImageUseCase: sl(),
     ),
   );
 }
