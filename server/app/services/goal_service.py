@@ -146,8 +146,9 @@ class GoalService:
         # Don't cap at 100% to show if exceeded, but cap negative at -100%
         progress_percentage = max(progress_percentage, -100.0)
         
-        # Calculate days remaining
-        days_remaining = (goal.end_date - now).days
+        # Calculate days remaining - make end_date timezone-aware if naive
+        end_date = goal.end_date if goal.end_date.tzinfo else goal.end_date.replace(tzinfo=timezone.utc)
+        days_remaining = (end_date - now).days
         is_overdue = days_remaining < 0
         
         # Count contributions

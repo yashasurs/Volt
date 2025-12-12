@@ -14,9 +14,7 @@ def sample_goal_data(test_user):
         "title": "Vacation Fund",
         "description": "Save for summer vacation",
         "target_amount": 5000.00,
-        "end_date": (datetime.utcnow() + timedelta(days=180)).isoformat(),
-        "debit_contribution_rate": 10.00,
-        "credit_contribution_rate": 5.00
+        "end_date": (datetime.utcnow() + timedelta(days=180)).isoformat()
     }
 
 
@@ -40,9 +38,7 @@ class TestCreateGoal:
             "title": "Emergency Fund",
             "description": "Build emergency savings",
             "target_amount": 10000.00,
-            "end_date": (datetime.utcnow() + timedelta(days=365)).isoformat(),
-            "debit_contribution_rate": 15.00,
-            "credit_contribution_rate": 10.00
+            "end_date": (datetime.utcnow() + timedelta(days=365)).isoformat()
         }
         
         response = client.post(
@@ -57,16 +53,14 @@ class TestCreateGoal:
         assert data["description"] == "Build emergency savings"
         assert data["target_amount"] == "10000.00"
         assert data["current_amount"] == "0.00"
-        assert data["debit_contribution_rate"] == "15.00"
-        assert data["credit_contribution_rate"] == "10.00"
         assert data["is_active"] == True
         assert data["is_achieved"] == False
         assert data["user_id"] == test_user.id
         assert "id" in data
         assert "created_at" in data
     
-    def test_create_goal_with_defaults(self, client, auth_headers):
-        """Test creating goal with default contribution rates"""
+    def test_create_goal_minimal_data(self, client, auth_headers):
+        """Test creating goal with minimal required data"""
         goal_data = {
             "title": "Short Term Goal",
             "target_amount": 1000.00,
@@ -81,10 +75,10 @@ class TestCreateGoal:
         
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["debit_contribution_rate"] == "10.00"
-        assert data["credit_contribution_rate"] == "5.00"
+        assert data["title"] == "Short Term Goal"
+        assert data["current_amount"] == "0.00"
     
-    def test_create_goal_invalid_target_amount(self, client, auth_headers):
+    def test_create_goal_negative_amount(self, client, auth_headers):
         """Test creating goal with negative target amount"""
         goal_data = {
             "title": "Invalid Goal",
@@ -247,24 +241,22 @@ class TestUpdateGoal:
         data = response.json()
         assert data["target_amount"] == "7500.00"
     
-    def test_update_goal_contribution_rates(self, client, auth_headers, created_goal):
-        """Test updating contribution rates"""
+    def test_update_goal_status(self, client, auth_headers, created_goal):
+        """Test updating goal status"""
         response = client.put(
             f"/goals/{created_goal['id']}",
             json={
-                "debit_contribution_rate": 20.00,
-                "credit_contribution_rate": 15.00
+                "is_active": False
             },
             headers=auth_headers
         )
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["debit_contribution_rate"] == "20.00"
-        assert data["credit_contribution_rate"] == "15.00"
+        assert data["is_active"] == False
     
     def test_update_nonexistent_goal(self, client, auth_headers):
-        """Test updating non-existent goal"""
+        """Test updating a goal that doesn't exist"""
         response = client.put(
             "/goals/99999",
             json={"title": "Updated"},
@@ -368,36 +360,18 @@ class TestGoalContributions:
 
 class TestGoalIntegrationWithTransactions:
     """Test goal behavior with transaction creation"""
+class TestGoalIntegrationWithTransactions:
+    """Test goal behavior with transaction creation"""
     
-    def test_debit_transaction_contributes_to_goal(self, client, auth_headers, created_goal, test_user, db_session):
-        """Test that debit transactions contribute to active goals"""
-        # Create a debit transaction
-        transaction_amount = 100.00
-        expected_contribution = transaction_amount * (float(created_goal["debit_contribution_rate"]) / 100)
-        
-        client.post(
-            "/transactions/",
-            json={
-                "user_id": test_user.id,
-                "amount": transaction_amount,
-                "merchant": "Store",
-                "type": "debit"
-            },
-            headers=auth_headers
-        )
-        
-        # Check goal progress
-        goal_response = client.get(
+    def test_credit_transaction_increases_goal(self, client, auth_headers, created_goal, test_user, db_session):
+        """Test that credit transactions increase goal amount"""
+        # Get initial goal amount
+        initial_response = client.get(
             f"/goals/{created_goal['id']}",
             headers=auth_headers
         )
+        initial_amount = Decimal(initial_response.json()["current_amount"])
         
-        goal_data = goal_response.json()
-        # Goal should have contributions
-        assert len(goal_data["contributions"]) > 0
-    
-    def test_credit_transaction_contributes_to_goal(self, client, auth_headers, created_goal, test_user):
-        """Test that credit transactions contribute to active goals"""
         # Create a credit transaction
         transaction_amount = 500.00
         
@@ -412,15 +386,60 @@ class TestGoalIntegrationWithTransactions:
             headers=auth_headers
         )
         
-        # Check goal progress
+        # Check goal increased
         goal_response = client.get(
             f"/goals/{created_goal['id']}",
             headers=auth_headers
         )
         
         goal_data = goal_response.json()
-        # Goal should have contributions
+        new_amount = Decimal(goal_data["current_amount"])
+        assert new_amount == initial_amount + Decimal(str(transaction_amount))
         assert len(goal_data["contributions"]) > 0
+    
+    def test_debit_transaction_decreases_goal(self, client, auth_headers, created_goal, test_user):
+        """Test that debit transactions decrease goal amount"""
+        # First add some credits to have positive balance
+        client.post(
+            "/transactions/",
+            json={
+                "user_id": test_user.id,
+                "amount": 1000.00,
+                "merchant": "Income",
+                "type": "credit"
+            },
+            headers=auth_headers
+        )
+        
+        # Get amount after credit
+        response1 = client.get(
+            f"/goals/{created_goal['id']}",
+            headers=auth_headers
+        )
+        amount_after_credit = Decimal(response1.json()["current_amount"])
+        
+        # Create a debit transaction
+        debit_amount = 100.00
+        client.post(
+            "/transactions/",
+            json={
+                "user_id": test_user.id,
+                "amount": debit_amount,
+                "merchant": "Store",
+                "type": "debit"
+            },
+            headers=auth_headers
+        )
+        
+        # Check goal decreased
+        goal_response = client.get(
+            f"/goals/{created_goal['id']}",
+            headers=auth_headers
+        )
+        
+        goal_data = goal_response.json()
+        new_amount = Decimal(goal_data["current_amount"])
+        assert new_amount == amount_after_credit - Decimal(str(debit_amount))
     
     def test_inactive_goal_no_contributions(self, client, auth_headers, created_goal, test_user):
         """Test that inactive goals don't receive contributions"""
@@ -436,6 +455,7 @@ class TestGoalIntegrationWithTransactions:
             headers=auth_headers
         )
         initial_contributions = len(initial_response.json()["contributions"])
+        initial_amount = Decimal(initial_response.json()["current_amount"])
         
         # Create a transaction
         client.post(
@@ -444,7 +464,7 @@ class TestGoalIntegrationWithTransactions:
                 "user_id": test_user.id,
                 "amount": 100.00,
                 "merchant": "Store",
-                "type": "debit"
+                "type": "credit"
             },
             headers=auth_headers
         )
@@ -455,5 +475,7 @@ class TestGoalIntegrationWithTransactions:
             headers=auth_headers
         )
         final_contributions = len(final_response.json()["contributions"])
+        final_amount = Decimal(final_response.json()["current_amount"])
         
         assert final_contributions == initial_contributions
+        assert final_amount == initial_amount

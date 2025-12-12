@@ -114,7 +114,6 @@ async def get_goal(
                 goal_id=c.goal_id,
                 transaction_id=c.transaction_id,
                 amount=c.amount,
-                contribution_type=c.contribution_type,
                 created_at=c.created_at
             ) for c in goal.contributions
         ] if hasattr(goal, 'contributions') else [],
@@ -219,7 +218,6 @@ async def get_goal_contributions(
             goal_id=c.goal_id,
             transaction_id=c.transaction_id,
             amount=c.amount,
-            contribution_type=c.contribution_type,
             created_at=c.created_at
         ) for c in goal.contributions
     ]
